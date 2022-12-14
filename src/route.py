@@ -10,7 +10,7 @@ QUERY_PARAM = "pageIndex"
 
 
 class AssessAds:
-    LIST_ID = list()
+    LIST_ID = DB.get_last_500_ads_code()
 
     @classmethod
     def assess_data(cls, data: list):
@@ -90,7 +90,7 @@ def clean_data(data: list):
     return output
 
 
-def fetch_data():
+def fetch_data(start_msg):
     for res in request_data():
         ads_list: list = res.get('data', dict()).get('ads', list())
         if not ads_list:
@@ -102,6 +102,8 @@ def fetch_data():
             DB.insert_many(ads_list)
             request_phone(30)
             continue
-        break
+        if start_msg == 'loop start':
+            break
     request_phone()
     sleep(5)
+    return True

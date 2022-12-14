@@ -35,3 +35,9 @@ class DB:
     def get_code_without_phone(cls, length):
         res = cls.collection.find({"phones": None}).limit(length)
         return res
+
+    @classmethod
+    def get_last_500_ads_code(cls):
+        res = cls.collection.find().sort('_id', -1).limit(500)
+        res = [obj.get('ads_code') for obj in res]
+        return res
