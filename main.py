@@ -13,5 +13,6 @@ if __name__ == '__main__':
             start_msg = "loop start" if res else start_msg
         except Exception as err:
             print(f"err: {err}")
+            print(traceback.format_exc())
             sleep(5)
 
