@@ -77,7 +77,7 @@ def clean_data(data: list):
     output = list()
     for obj in data:
         dct = {
-            "dealer": obj.get("dealer"),
+            "user": obj.get("dealer"),
             "detail": obj.get("detail"),
             "images": obj.get("images"),
             "metadata": obj.get("metadata"),
