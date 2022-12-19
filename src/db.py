@@ -1,18 +1,18 @@
 from typing import Union
 
 from pymongo import MongoClient
-from config.config import Configer
+from config.config import Config
 
-configer = Configer()
-host = configer.get("mongo", "host", _type="str")
-port = configer.get("mongo", "port", _type="int")
+uri = Config.get("mongo", "uri")
+print(uri)
 
-CLIENT = MongoClient(host, port)
+CLIENT = MongoClient(uri)
+print(CLIENT)
 
 
 class DB:
-    db = CLIENT["db1"]
-    collection = db["col1"]
+    db = CLIENT["ads-scrapper"]
+    collection = db["bama_car"]
 
     @classmethod
     def insert(cls, data: dict):
