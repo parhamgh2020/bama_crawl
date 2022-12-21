@@ -6,8 +6,8 @@ from config.config import Config
 uri = Config.get("mongo", "uri")
 print(uri)
 
-# CLIENT = MongoClient(uri)
-CLIENT = MongoClient("localhost", 27017)
+CLIENT = MongoClient(uri)
+# CLIENT = MongoClient("localhost", 27017)
 print(CLIENT)
 
 

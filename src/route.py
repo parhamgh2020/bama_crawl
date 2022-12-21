@@ -42,7 +42,7 @@ class AssessAds:
     #     return output
 
 
-def request_data(pages=30):
+def request_data(pages=100):
     ua = UA.random
     for i in range(pages):
         print("index:", i)
@@ -188,6 +188,6 @@ def fetch_data(start_msg):
             continue
         if start_msg == 'loop start':
             break
-    request_phone()
+    request_phone(30)
     sleep(5)
     return True
