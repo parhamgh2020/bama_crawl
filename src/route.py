@@ -60,7 +60,8 @@ def request_data(pages=30):
 
 def request_phone(length: int = 10):
     ua = UA.random
-    for ads in AssessAds.get_code_without_phone(length):
+    lst = AssessAds.get_code_without_phone(length)
+    for ads in lst:
         header = {
             "user-agent": ua
         }

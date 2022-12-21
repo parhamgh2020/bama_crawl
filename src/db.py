@@ -6,7 +6,8 @@ from config.config import Config
 uri = Config.get("mongo", "uri")
 print(uri)
 
-CLIENT = MongoClient(uri)
+# CLIENT = MongoClient(uri)
+CLIENT = MongoClient("localhost", 27017)
 print(CLIENT)
 
 
@@ -36,7 +37,7 @@ class DB:
 
     @classmethod
     def get_code_without_phone(cls, length):
-        res = cls.collection.find({"phones": None}).limit(length)
+        res = cls.collection.find({"numbers": None}).limit(length)
         return res
 
     @classmethod
