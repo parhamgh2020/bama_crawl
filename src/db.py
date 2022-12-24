@@ -10,8 +10,8 @@ print(CLIENT)
 
 
 class DB:
-    db = CLIENT["ads-scrapper"]
-    collection = db["bama_car"]
+    db = CLIENT[Config.get("mongo", "db")]
+    collection = db[Config.get("mongo", "collection")]
 
     @classmethod
     def insert(cls, data: dict):
