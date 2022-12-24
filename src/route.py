@@ -1,14 +1,58 @@
+import json
+import traceback
 from time import sleep
 
 import requests
 from fake_useragent import UserAgent
-
+from random import choice
 from src.db import DB
+from config.config import Config
 
 UA = UserAgent()
 URL = "https://bama.ir/car"
 END_POINT = "api/search"
 QUERY_PARAM = "pageIndex"
+
+sleep_time = 2
+max_sleep = 60 * 5
+step_increase_sleep = 60
+step_decrease_sleep = 5
+
+header = {
+    # ":authority": "bama.ir",
+    # ":method": "GET",
+    # ":path": "/cad/api/detail/7WDgqaMe/phone",
+    # ":scheme": "https",
+    "accept": Config.get("header", "accept"),
+    "accept-encoding": Config.get("header", "accept-encoding"),
+    "accept-language": Config.get("header", "accept-language"),
+    "cookie": Config.get("header", "cookie"),
+    "referer": Config.get("header", "referer"),
+    "sec-ch-ua": Config.get("header", "sec-ch-ua"),
+    "sec-ch-ua-mobile": Config.get("header", "sec-ch-ua-mobile"),
+    "sec-ch-ua-platform": Config.get("header", "sec-ch-ua-platform"),
+    "sec-fetch-dest": Config.get("header", "sec-fetch-dest"),
+    "sec-fetch-mode": Config.get("header", "sec-fetch-mode"),
+    "sec-fetch-site": Config.get("header", "sec-fetch-site"),
+    "sec-gpc": Config.get("header", "sec-gpc"),
+    "traceparent": Config.get("header", "traceparent"),
+    "user-agent": Config.get("header", "user-agent"),
+}
+
+IPs: list = json.loads(Config.get("proxy", "proxies"))
+public_id = Config.get_bool("proxy", "use_public_ip")
+
+
+def get_proxy() -> dict:
+    global IPs
+    if public_id:
+        IPs.append(None)
+    ip = choice(IPs)
+    proxy = {
+        'http': ip,
+        "https": ip,
+    }
+    return proxy
 
 
 class AssessAds:
@@ -42,36 +86,58 @@ class AssessAds:
     #     return output
 
 
-def request_data(pages=100):
-    ua = UA.random
+def request_data(pages=30):
     for i in range(pages):
         print("index:", i)
-        header = {
-            "user-agent": ua
-        }
         try:
-            res = requests.get(f"https://bama.ir/cad/api/search?pageIndex={i}", headers=header)
-            if res.status_code != 200:
-                raise Exception(f"status code: {res.status_code}")
-            yield res.json()
+            global sleep_time
+            print("sleep:", sleep_time, "seconds")
+            sleep(sleep_time)
+            proxy = get_proxy()
+            print("proxy:", proxy if proxy["http"] else "public id")
+            res = requests.get(f"https://bama.ir/cad/api/search?pageIndex={i}",
+                               headers=header,
+                               proxies=proxy)
+            if res.status_code == 403:
+                if sleep_time < max_sleep:
+                    sleep_time += step_increase_sleep
+                print("status code:", res.status_code)
+            elif res.status_code != 200:
+                print("status: ", res.status_code)
+            elif res.status_code == 200:
+                if sleep_time > 2:
+                    sleep_time -= step_decrease_sleep if sleep_time - step_decrease_sleep > 2 else 2
+                yield res.json()
         except Exception as err:
             raise Exception(err)
 
 
 def request_phone(length: int = 10):
-    ua = UA.random
     lst = AssessAds.get_code_without_phone(length)
     for ads in lst:
-        header = {
-            "user-agent": ua
-        }
         try:
-            res = requests.get(f"https://bama.ir/cad/api/detail/{ads.get('id')}/phone", headers=header)
-            if res.status_code != 200:
-                raise Exception(f"status code: {res.status_code}")
-            data: dict = res.json().get("data")
-            DB.update_phone_by_ads_code(ads.get('id'), data)
-            sleep(1)
+            global sleep_time
+            print("sleep:", sleep_time, "seconds")
+            sleep(sleep_time)
+            proxy = get_proxy()
+            res = requests.get(f"https://bama.ir/cad/api/detail/{ads.get('id')}/phone",
+                               headers=header,
+                               proxies=proxy)
+            if res.status_code == 403:
+                if sleep_time < max_sleep:
+                    sleep_time += step_increase_sleep
+                print("proxy:", proxy if proxy["http"] else "public id",
+                      "status code:", res.status_code)
+            elif res.status_code != 200:
+                print("status: ", res.status_code)
+                if res.status_code == 400:
+                    data = {"phone": None, "mobile": None}
+                    DB.update_phone_by_ads_code(ads.get('id'), data)
+            elif res.status_code == 200:
+                if sleep_time > 2:
+                    sleep_time -= step_decrease_sleep if sleep_time - step_decrease_sleep > 2 else 2
+                data: dict = res.json().get("data")
+                DB.update_phone_by_ads_code(ads.get('id'), data)
         except Exception as err:
             raise Exception(err)
 
@@ -188,6 +254,5 @@ def fetch_data(start_msg):
             continue
         if start_msg == 'loop start':
             break
-    request_phone(30)
-    sleep(5)
+    request_phone()
     return True
