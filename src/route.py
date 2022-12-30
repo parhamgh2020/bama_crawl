@@ -66,9 +66,12 @@ class Proxies:
     def get_proxy(self):
         if self.index == len(self.lst):
             self.index = 0
-        output = self.lst[self.index]
+        ip = self.lst[self.index]
         self.index += 1
-        return output
+        return {
+            'http': ip,
+            "https": ip,
+        }
 
 
 proxies = Proxies(IPs, public_id)
@@ -79,8 +82,7 @@ def send_request(url, proxy=None):
         _proxy = proxies.get_proxy()
     else:
         _proxy = proxy
-    # print("proxy:", proxy if proxy["http"] else "public id")
-    print("proxy:", proxy.get('http'))
+    print("proxy:", _proxy['http'] if _proxy['http'] else "public id")
     try:
         res = requests.get(url,
                            headers=header,
@@ -139,12 +141,12 @@ def request_data(pages=30):
             if res == 403:
                 if sleep_time < max_sleep:
                     sleep_time += step_increase_sleep
-            elif res != 200:
+            elif res != 200 and isinstance(res, int):
                 print("no action")
-            elif res.status_code == 200:
+            else:
                 if sleep_time > 2:
                     sleep_time -= step_decrease_sleep if sleep_time - step_decrease_sleep > 2 else 2
-                yield res.json()
+                yield res
         except Exception as err:
             raise Exception(err)
 
@@ -161,14 +163,14 @@ def request_phone(length: int = 10):
             if res == 403:
                 if sleep_time < max_sleep:
                     sleep_time += step_increase_sleep
-            elif res.status_code != 200:
+            elif res != 200:
                 if res == 400:
                     data = {"phone": None, "mobile": None}
                     DB.update_phone_by_ads_code(ads.get('id'), data)
-            elif res.status_code == 200:
+            else:
                 if sleep_time > 2:
                     sleep_time -= step_decrease_sleep if sleep_time - step_decrease_sleep > 2 else 2
-                data: dict = res.json().get("data")
+                data: dict = res.get("data")
                 DB.update_phone_by_ads_code(ads.get('id'), data)
         except Exception as err:
             raise Exception(err)
