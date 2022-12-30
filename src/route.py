@@ -55,6 +55,54 @@ def get_proxy() -> dict:
     return proxy
 
 
+class Proxies:
+
+    def __init__(self, ips_list, is_contained_public):
+        self.lst = ips_list
+        self.index = 0
+        if is_contained_public:
+            ips_list.append(None)
+
+    def get_proxy(self):
+        if self.index == len(self.lst):
+            self.index = 0
+        output = self.lst[self.index]
+        self.index += 1
+        return output
+
+
+proxies = Proxies(IPs, public_id)
+
+
+def send_request(url, proxy=None):
+    if not proxy:
+        _proxy = proxies.get_proxy()
+    else:
+        _proxy = proxy
+    # print("proxy:", proxy if proxy["http"] else "public id")
+    print("proxy:", proxy.get('http'))
+    try:
+        res = requests.get(url,
+                           headers=header,
+                           proxies=_proxy,
+                           timeout=5)
+    except Exception as err:
+        print(f"connection problem: {type(err)}")
+        return 500
+    if res.status_code == 200:
+        return res.json()
+    elif res.status_code == 403:
+        print("status code:", res.status_code)
+        if not proxy:
+            proxy = get_proxy()
+            res = send_request(url, proxy)
+            return res
+        return res.status_code
+    else:
+        print("status code:", res.status_code)
+        return res.status_code
+
+
 class AssessAds:
     LIST_ID = DB.get_last_500_ads_code()
 
@@ -79,12 +127,6 @@ class AssessAds:
         res = DB.get_code_without_phone(length)
         return res if res else list()
 
-    # @classmethod
-    # def get_code_without_phone(cls, length):
-    #     output = cls.LIST_ID_WITHOUT_PHONE[:length]
-    #     del cls.LIST_ID_WITHOUT_PHONE[:length]
-    #     return output
-
 
 def request_data(pages=30):
     for i in range(pages):
@@ -93,17 +135,12 @@ def request_data(pages=30):
             global sleep_time
             print("sleep:", sleep_time, "seconds")
             sleep(sleep_time)
-            proxy = get_proxy()
-            print("proxy:", proxy if proxy["http"] else "public id")
-            res = requests.get(f"https://bama.ir/cad/api/search?pageIndex={i}",
-                               headers=header,
-                               proxies=proxy)
-            if res.status_code == 403:
+            res = send_request(f"https://bama.ir/cad/api/search?pageIndex={i}")
+            if res == 403:
                 if sleep_time < max_sleep:
                     sleep_time += step_increase_sleep
-                print("status code:", res.status_code)
-            elif res.status_code != 200:
-                print("status: ", res.status_code)
+            elif res != 200:
+                print("no action")
             elif res.status_code == 200:
                 if sleep_time > 2:
                     sleep_time -= step_decrease_sleep if sleep_time - step_decrease_sleep > 2 else 2
@@ -120,17 +157,12 @@ def request_phone(length: int = 10):
             print("sleep:", sleep_time, "seconds")
             sleep(sleep_time)
             proxy = get_proxy()
-            res = requests.get(f"https://bama.ir/cad/api/detail/{ads.get('id')}/phone",
-                               headers=header,
-                               proxies=proxy)
-            if res.status_code == 403:
+            res = send_request(f"https://bama.ir/cad/api/detail/{ads.get('id')}/phone", proxy)
+            if res == 403:
                 if sleep_time < max_sleep:
                     sleep_time += step_increase_sleep
-                print("proxy:", proxy if proxy["http"] else "public id",
-                      "status code:", res.status_code)
             elif res.status_code != 200:
-                print("status: ", res.status_code)
-                if res.status_code == 400:
+                if res == 400:
                     data = {"phone": None, "mobile": None}
                     DB.update_phone_by_ads_code(ads.get('id'), data)
             elif res.status_code == 200:
