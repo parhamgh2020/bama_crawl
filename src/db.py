@@ -30,6 +30,7 @@ class DB:
     @classmethod
     def update_phone_by_ads_code(cls, ads_code: str, data: dict):
         phones: dict = cls._format_numbers(data)
+        breakpoint()
         res = cls.collection.update_many({"id": ads_code}, {"$set": {"numbers": phones}})
         print("update phones:", res.acknowledged, ", ads_code:", ads_code)
 

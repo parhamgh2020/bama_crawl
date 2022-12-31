@@ -160,7 +160,7 @@ def request_phone(length: int = 10):
             if res == 403:
                 if sleep_time < max_sleep:
                     sleep_time += step_increase_sleep
-            elif res != 200:
+            elif res != 200 and isinstance(res, int):
                 if res == 400:
                     data = {"phone": None, "mobile": None}
                     DB.update_phone_by_ads_code(ads.get('id'), data)
