@@ -1,6 +1,7 @@
 import json
 import traceback
 from time import sleep
+from typing import Union
 
 import requests
 from fake_useragent import UserAgent
@@ -43,18 +44,6 @@ IPs: list = json.loads(Config.get("proxy", "proxies"))
 public_id = Config.get_bool("proxy", "use_public_ip")
 
 
-def get_proxy() -> dict:
-    global IPs
-    if public_id:
-        IPs.append(None)
-    ip = choice(IPs)
-    proxy = {
-        'http': ip,
-        "https": ip,
-    }
-    return proxy
-
-
 class Proxies:
 
     def __init__(self, ips_list, is_contained_public):
@@ -77,7 +66,15 @@ class Proxies:
 proxies = Proxies(IPs, public_id)
 
 
-def send_request(url, proxy=None):
+def send_request(url, proxy=None) -> Union[int, dict]:
+    """
+    request to bama site
+    if proxy is not set then proxy will be set automatically
+    if proxy is not set then status code 403 will handle
+    :param url: url can be car detail url or phone url
+    :param proxy:
+    :return: result
+    """
     if not proxy:
         _proxy = proxies.get_proxy()
     else:
@@ -96,7 +93,7 @@ def send_request(url, proxy=None):
     elif res.status_code == 403:
         print("status code:", res.status_code)
         if not proxy:
-            proxy = get_proxy()
+            proxy = proxies.get_proxy()
             res = send_request(url, proxy)
             return res
         return res.status_code
@@ -158,7 +155,7 @@ def request_phone(length: int = 10):
             global sleep_time
             print("sleep:", sleep_time, "seconds")
             sleep(sleep_time)
-            proxy = get_proxy()
+            proxy = proxies.get_proxy()
             res = send_request(f"https://bama.ir/cad/api/detail/{ads.get('id')}/phone", proxy)
             if res == 403:
                 if sleep_time < max_sleep:
